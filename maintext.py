@@ -122,17 +122,17 @@ def main():
 
     for i in range(len(XTrain)):
         img = (255. - XTrain[i]) / 255.
-        width = int(img.shape[1] // 2)
-        height = int(img.shape[0] // 2)
-        XTrain[i] = cv2.resize(img, (width, height))
+        #width = int(img.shape[1] // 2)
+        #height = int(img.shape[0] // 2)
+        #XTrain[i] = cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YTrain[i]):
             YTrain[i][idx] = w2i[symbol]
     #
     for i in range(len(XTest)):
         img = (255. - XTest[i]) / 255.
-        width = int(img.shape[1] // 2)
-        height = int(img.shape[0] // 2)
-        XTest[i] = cv2.resize(img, (width, height))
+        #width = int(img.shape[1] // 2)
+        #height = int(img.shape[0] // 2)
+        #XTest[i] = cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YTest[i]):
             YTest[i][idx] = w2i[symbol]
 
