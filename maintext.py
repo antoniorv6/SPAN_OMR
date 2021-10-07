@@ -1,4 +1,4 @@
-from model import get_model
+#from model import get_model
 from utils import levenshtein, check_and_retrieveVocabulary, data_preparation_CTC
 
 from sklearn.model_selection import train_test_split
@@ -9,6 +9,7 @@ import numpy as np
 import random
 import itertools
 import pickle
+import tqdm
 
 CONST_IMG_DIR = "Data/PAGES/IMG/"
 CONST_AGNOSTIC_DIR = "Data/PAGES/AGNOSTIC/"
@@ -27,6 +28,18 @@ def load_data():
     
     return X, Y
 
+def createDataArray(dataDict, folder):
+    X = []
+    Y = []
+    for img in tqdm.tqdm(dataDict.keys()):
+        lines = dataDict[img]['lines']
+        linearray = []
+        for line in lines:
+            linearray += line['text'].split(" ")
+        Y.append(linearray)
+        X.append(cv2.imread(f"{PCKL_PATH}/{folder}/{img}", 0))
+    return X, Y
+
 def load_data_text():
     trainX = []
     trainY = []
@@ -35,11 +48,17 @@ def load_data_text():
     testX = []
     testY = []
 
-    with open(f"{PCKL_PATH}labels.pckl") as file:
+    with open(f"{PCKL_PATH}labels.pkl", "rb") as file:
         data = pickle.load(file)
         dataTrain = data['ground_truth']['train']
-        print(dataTrain)
-        sys.exit(0)
+        dataVal = data['ground_truth']['valid']
+        dataTest = data['ground_truth']['test']
+
+        trainX, trainY = createDataArray(dataTrain, "train")
+        valX, valY = createDataArray(dataVal, "valid")
+        testX, testY = createDataArray(dataTest, "test")
+
+    return trainX, trainY, valX, valY, testX, testY
 
 def validateModel(model, X, Y, i2w):
     acc_ed_ser = 0
@@ -75,12 +94,10 @@ def validateModel(model, X, Y, i2w):
 
 
 def main():
-    X, Y = load_data_text()
-    print(X[0])
-    print(Y[0])
+    XTrain, YTrain, XVal, YVal, XTest, YTest = load_data_text()
 
-    XTrain, XTest, YTrain, YTest = train_test_split(X,Y, test_size=0.1)
-    w2i, i2w = check_and_retrieveVocabulary([YTrain, YTest], "./vocab", "SPAN")
+    #XTrain, XTest, YTrain, YTest = train_test_split(X,Y, test_size=0.1)
+    w2i, i2w = check_and_retrieveVocabulary([YTrain, YVal, YTest], "./vocab", "SPAN")
 
     XTrain = np.array(XTrain)
     YTrain = np.array(YTrain)
@@ -89,14 +106,14 @@ def main():
 
     for i in range(len(XTrain)):
         img = (255. - XTrain[i]) / 255.
-        width = fixed_height
+        width = int(float(fixed_height * img.shape[1]) / img.shape[0])
         XTrain[i] = cv2.resize(img, (width, fixed_height))
         for idx, symbol in enumerate(YTrain[i]):
             YTrain[i][idx] = w2i[symbol]
     
     for i in range(len(XTest)):
         img = (255. - XTest[i]) / 255.
-        width = fixed_height
+        width = int(float(fixed_height * img.shape[1]) / img.shape[0])
         XTest[i] = cv2.resize(img, (width, fixed_height))
         for idx, symbol in enumerate(YTest[i]):
             YTest[i][idx] = w2i[symbol]
