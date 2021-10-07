@@ -1,4 +1,4 @@
-FROM tensorflow/tensorflow
+FROM tensorflow/tensorflow:latest-gpu
 
 RUN apt update 
 RUN apt install ffmpeg libsm6 -y

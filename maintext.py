@@ -1,4 +1,4 @@
-#from model import get_model
+from model import get_model
 from utils import levenshtein, check_and_retrieveVocabulary, data_preparation_CTC
 
 from sklearn.model_selection import train_test_split
@@ -41,10 +41,16 @@ def createDataArray(dataDict, folder):
     Y = []
     for img in tqdm.tqdm(dataDict.keys()):
         lines = dataDict[img]['lines']
+        print(lines)
         linearray = []
         for line in lines:
-            linearray += line['text'].split(" ")
+            line_stripped = line['text'].split(" ")
+            for l in line_stripped:
+                for char in l:
+                    linearray += char
+                linearray += ['<s>']
         Y.append(linearray)
+        print(linearray)
         X.append(cv2.imread(f"{PCKL_PATH}/{folder}/{img}", 0))
     return X, Y
 
@@ -132,7 +138,7 @@ def main():
 
     print(XTrain[0].shape)
 
-    model_train, model_pred = get_model(input_shape=(None, None, 1), out_tokens=256)
+    model_train, model_pred = get_model(input_shape=(None, None, 1), out_tokens=len(w2i))
 
     X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, None)
 
