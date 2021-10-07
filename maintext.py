@@ -112,19 +112,19 @@ def main():
     XTest = np.array(XTest)
     YTest = np.array(YTest)
 
-    #for i in range(len(XTrain)):
+    for i in range(len(XTrain)):
     #    img = (255. - XTrain[i]) / 255.
     #    width = int(float(fixed_height * img.shape[1]) / img.shape[0])
     #    XTrain[i] = cv2.resize(img, (width, fixed_height))
-    #    for idx, symbol in enumerate(YTrain[i]):
-    #        YTrain[i][idx] = w2i[symbol]
+        for idx, symbol in enumerate(YTrain[i]):
+            YTrain[i][idx] = w2i[symbol]
     #
-    #for i in range(len(XTest)):
+    for i in range(len(XTest)):
     #    img = (255. - XTest[i]) / 255.
     #    width = int(float(fixed_height * img.shape[1]) / img.shape[0])
     #    XTest[i] = cv2.resize(img, (width, fixed_height))
-    #    for idx, symbol in enumerate(YTest[i]):
-    #        YTest[i][idx] = w2i[symbol]
+        for idx, symbol in enumerate(YTest[i]):
+            YTest[i][idx] = w2i[symbol]
 
     model_train, model_pred = get_model(input_shape=(fixed_height, None, 1), out_tokens=256)
 
