@@ -134,7 +134,7 @@ def main():
 
     model_train, model_pred = get_model(input_shape=(None, None, 1), out_tokens=256)
 
-    X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, fixed_height)
+    X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, None)
 
     print('Training with ' + str(X_train.shape[0]) + ' samples.')
     

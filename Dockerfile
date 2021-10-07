@@ -1,7 +1,8 @@
-FROM tensorflow/tensorflow:2.4.3-gpu
+FROM tensorflow/tensorflow
 
-RUN apt-get update 
-RUN apt-get install ffmpeg libsm6 libxext6  -y
+RUN apt update 
+RUN apt install ffmpeg libsm6 -y
+RUN apt install vim -y
 
 RUN pip install --upgrade pip
 RUN pip install opencv-python
