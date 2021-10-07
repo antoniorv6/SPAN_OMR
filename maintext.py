@@ -1,4 +1,4 @@
-#from model import get_model
+from model import get_model
 from utils import levenshtein, check_and_retrieveVocabulary, data_preparation_CTC
 
 from sklearn.model_selection import train_test_split
@@ -10,12 +10,20 @@ import random
 import itertools
 import pickle
 import tqdm
+import tensorflow as tf
 
 CONST_IMG_DIR = "Data/PAGES/IMG/"
 CONST_AGNOSTIC_DIR = "Data/PAGES/AGNOSTIC/"
 PCKL_PATH = "Data/IAM_paragraph/"
 
 fixed_height = 512
+
+config = tf.compat.v1.ConfigProto(gpu_options = 
+                         tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8)
+)
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
+tf.compat.v1.keras.backend.set_session(session)
 
 def load_data():
     X = []
