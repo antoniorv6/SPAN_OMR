@@ -126,7 +126,7 @@ def main():
         for idx, symbol in enumerate(YTest[i]):
             YTest[i][idx] = w2i[symbol]
 
-    model_train, model_pred = get_model(input_shape=(fixed_height, None, 1), out_tokens=256)
+    model_train, model_pred = get_model(input_shape=(None, None, 1), out_tokens=256)
 
     X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, fixed_height)
 
