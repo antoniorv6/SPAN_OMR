@@ -102,16 +102,18 @@ def main():
     YTest = np.array(YTest)
 
     for i in range(len(XTrain)):
-    #    img = (255. - XTrain[i]) / 255.
-    #    width = int(float(fixed_height * img.shape[1]) / img.shape[0])
-    #    XTrain[i] = cv2.resize(img, (width, fixed_height))
+        img = (255. - XTrain[i]) / 255.
+        width = img.shape[1] / 2
+        height = img.shape[0] / 2
+        XTest[i] = cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YTrain[i]):
             YTrain[i][idx] = w2i[symbol]
     #
     for i in range(len(XTest)):
-    #    img = (255. - XTest[i]) / 255.
-    #    width = int(float(fixed_height * img.shape[1]) / img.shape[0])
-    #    XTest[i] = cv2.resize(img, (width, fixed_height))
+        img = (255. - XTest[i]) / 255.
+        width = img.shape[1] / 2
+        height = img.shape[0] / 2
+        XTest[i] = cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YTest[i]):
             YTest[i][idx] = w2i[symbol]
 
@@ -133,7 +135,7 @@ def main():
     not_improved = 0
 
     for super_epoch in range(10000):
-       model_train.fit(inputs,outputs, batch_size = 15, epochs = 5, verbose = 0)
+       model_train.fit(inputs,outputs, batch_size = 4, epochs = 5, verbose = 0)
        SER = validateModel(model_pred, XTest, YTest, i2w)
        print(f"EPOCH {super_epoch} | SER {SER}")
        if SER < best_ser:
