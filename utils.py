@@ -44,8 +44,9 @@ def make_vocabulary(YSequences, pathToSave, nameOfVoc):
 def data_preparation_CTC(X, Y, height):
     # X_train, L_train
     max_image_width = max([img.shape[1] for img in X])
+    max_image_height = max([img.shape[0] for img in X])
 
-    X_train = np.zeros(shape=[len(X), height, max_image_width, 1], dtype=np.float32)
+    X_train = np.zeros(shape=[len(X), max_image_height, max_image_width, 1], dtype=np.float32)
     L_train = np.zeros(shape=[len(X),1])
 
     for i, img in enumerate(X):
