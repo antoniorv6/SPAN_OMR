@@ -144,7 +144,7 @@ def main():
     not_improved = 0
 
     for super_epoch in range(10000):
-       model_train.fit(inputs,outputs, batch_size = 16, epochs = 5, verbose = 2)
+       model_train.fit(inputs,outputs, batch_size = 4, epochs = 5, verbose = 1)
        SER = validateModel(model_pred, XTest, YTest, i2w)
        print(f"EPOCH {super_epoch} | SER {SER}")
        if SER < best_ser:
