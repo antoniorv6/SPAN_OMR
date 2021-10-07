@@ -9,14 +9,11 @@ import numpy as np
 import random
 import itertools
 import pickle
-import tqdm
 import tensorflow as tf
 
 CONST_IMG_DIR = "Data/PAGES/IMG/"
 CONST_AGNOSTIC_DIR = "Data/PAGES/AGNOSTIC/"
 PCKL_PATH = "Data/IAM_paragraph/"
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
 config = tf.compat.v1.ConfigProto(gpu_options = 
                          tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8)
@@ -41,7 +38,6 @@ def createDataArray(dataDict, folder):
     Y = []
     for img in tqdm.tqdm(dataDict.keys()):
         lines = dataDict[img]['lines']
-        print(lines)
         linearray = []
         for line in lines:
             line_stripped = line['text'].split(" ")
@@ -50,8 +46,8 @@ def createDataArray(dataDict, folder):
                     linearray += char
                 linearray += ['<s>']
         Y.append(linearray)
-        print(linearray)
         X.append(cv2.imread(f"{PCKL_PATH}/{folder}/{img}", 0))
+    
     return X, Y
 
 def load_data_text():
@@ -118,25 +114,20 @@ def main():
     XTest = np.array(XTest)
     YTest = np.array(YTest)
 
-    print(XTrain[0].shape)
-
     for i in range(len(XTrain)):
         img = (255. - XTrain[i]) / 255.
-        #width = int(img.shape[1] // 2)
-        #height = int(img.shape[0] // 2)
-        #XTrain[i] = cv2.resize(img, (width, height))
+        #width = int(img.shape[1] // 4)
+        #height = int(img.shape[0] // 4)
+        XTrain[i] = img#cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YTrain[i]):
             YTrain[i][idx] = w2i[symbol]
-    #
     for i in range(len(XTest)):
         img = (255. - XTest[i]) / 255.
         #width = int(img.shape[1] // 2)
         #height = int(img.shape[0] // 2)
-        #XTest[i] = cv2.resize(img, (width, height))
+        XTest[i] = img#cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YTest[i]):
             YTest[i][idx] = w2i[symbol]
-
-    print(XTrain[0].shape)
 
     model_train, model_pred = get_model(input_shape=(None, None, 1), out_tokens=len(w2i))
 
@@ -156,11 +147,11 @@ def main():
     not_improved = 0
 
     for super_epoch in range(10000):
-       model_train.fit(inputs,outputs, batch_size = 4, epochs = 5, verbose = 1)
+       model_train.fit(inputs,outputs, batch_size = 4, epochs = 5, verbose = 0)
        SER = validateModel(model_pred, XTest, YTest, i2w)
-       print(f"EPOCH {super_epoch} | SER {SER}")
+       print(f"EPOCH {super_epoch} | CER {SER}")
        if SER < best_ser:
-           print("SER improved - Saving epoch")
+           print("CER improved - Saving epoch")
            model_pred.save(f"SPAN_OMR.h5")
            best_ser = SER
            not_improved = 0
