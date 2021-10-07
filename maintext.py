@@ -112,24 +112,21 @@ def main():
     XTest = np.array(XTest)
     YTest = np.array(YTest)
 
-    for i in range(len(XTrain)):
-        img = (255. - XTrain[i]) / 255.
-        width = int(float(fixed_height * img.shape[1]) / img.shape[0])
-        XTrain[i] = cv2.resize(img, (width, fixed_height))
-        for idx, symbol in enumerate(YTrain[i]):
-            YTrain[i][idx] = w2i[symbol]
-    
-    for i in range(len(XTest)):
-        img = (255. - XTest[i]) / 255.
-        width = int(float(fixed_height * img.shape[1]) / img.shape[0])
-        XTest[i] = cv2.resize(img, (width, fixed_height))
-        for idx, symbol in enumerate(YTest[i]):
-            YTest[i][idx] = w2i[symbol]
+    #for i in range(len(XTrain)):
+    #    img = (255. - XTrain[i]) / 255.
+    #    width = int(float(fixed_height * img.shape[1]) / img.shape[0])
+    #    XTrain[i] = cv2.resize(img, (width, fixed_height))
+    #    for idx, symbol in enumerate(YTrain[i]):
+    #        YTrain[i][idx] = w2i[symbol]
+    #
+    #for i in range(len(XTest)):
+    #    img = (255. - XTest[i]) / 255.
+    #    width = int(float(fixed_height * img.shape[1]) / img.shape[0])
+    #    XTest[i] = cv2.resize(img, (width, fixed_height))
+    #    for idx, symbol in enumerate(YTest[i]):
+    #        YTest[i][idx] = w2i[symbol]
 
-    print(XTrain.shape)
-    print(YTrain.shape)
-
-    model_train, model_pred = get_model(input_shape=(fixed_height,fixed_height,1), out_tokens=256)
+    model_train, model_pred = get_model(input_shape=(fixed_height, None, 1), out_tokens=256)
 
     X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, fixed_height)
 
