@@ -131,7 +131,6 @@ def main():
             YTest[i][idx] = w2i[symbol]
 
     print(XTrain[0].shape)
-    sys.exit(0)
 
     model_train, model_pred = get_model(input_shape=(None, None, 1), out_tokens=256)
 
@@ -151,7 +150,7 @@ def main():
     not_improved = 0
 
     for super_epoch in range(10000):
-       model_train.fit(inputs,outputs, batch_size = 4, epochs = 5, verbose = 0)
+       model_train.fit(inputs,outputs, batch_size = 4, epochs = 5, verbose = 1)
        SER = validateModel(model_pred, XTest, YTest, i2w)
        print(f"EPOCH {super_epoch} | SER {SER}")
        if SER < best_ser:
