@@ -71,7 +71,7 @@ def get_model(input_shape, out_tokens):
     x = Conv2D(out_tokens+1, kernel_size=(5,5), padding="same", activation="softmax")(x)
 
     x = Permute((2, 1, 3))(x)
-    y_pred = Reshape(target_shape=((input_shape[0] // 32) * (input_shape[1] // 8), -1), name='reshape')(x)
+    y_pred = Reshape(target_shape=(-1, out_tokens+1), name='reshape')(x)
 
     model_pr = Model(inputs=input, outputs=y_pred)
     model_pr.summary()
