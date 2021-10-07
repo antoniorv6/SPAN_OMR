@@ -1,4 +1,4 @@
-from model import get_model
+#from model import get_model
 from utils import levenshtein, check_and_retrieveVocabulary, data_preparation_CTC
 
 from sklearn.model_selection import train_test_split
@@ -9,10 +9,21 @@ import numpy as np
 import random
 import itertools
 import pickle
+import tqdm
+import tensorflow as tf
 
 CONST_IMG_DIR = "Data/PAGES/IMG/"
 CONST_AGNOSTIC_DIR = "Data/PAGES/AGNOSTIC/"
 PCKL_PATH = "Data/IAM_paragraph/"
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
+config = tf.compat.v1.ConfigProto(gpu_options = 
+                         tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8)
+)
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
+tf.compat.v1.keras.backend.set_session(session)
 
 def load_data():
     X = []
@@ -28,7 +39,7 @@ def load_data():
 def createDataArray(dataDict, folder):
     X = []
     Y = []
-    for img in dataDict.keys():
+    for img in tqdm.tqdm(dataDict.keys()):
         lines = dataDict[img]['lines']
         linearray = []
         for line in lines:
@@ -101,21 +112,26 @@ def main():
     XTest = np.array(XTest)
     YTest = np.array(YTest)
 
+    print(XTrain[0].shape)
+
     for i in range(len(XTrain)):
         img = (255. - XTrain[i]) / 255.
-        width = img.shape[1] // 2
-        height = img.shape[0] // 2
+        width = int(img.shape[1] // 2)
+        height = int(img.shape[0] // 2)
         XTrain[i] = cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YTrain[i]):
             YTrain[i][idx] = w2i[symbol]
     #
     for i in range(len(XTest)):
         img = (255. - XTest[i]) / 255.
-        width = img.shape[1] / 2
-        height = img.shape[0] / 2
+        width = int(img.shape[1] // 2)
+        height = int(img.shape[0] // 2)
         XTest[i] = cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YTest[i]):
             YTest[i][idx] = w2i[symbol]
+
+    print(XTrain[0].shape)
+    sys.exit(0)
 
     model_train, model_pred = get_model(input_shape=(None, None, 1), out_tokens=256)
 
