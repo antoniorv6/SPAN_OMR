@@ -103,8 +103,8 @@ def main():
 
     for i in range(len(XTrain)):
         img = (255. - XTrain[i]) / 255.
-        width = img.shape[1] / 2
-        height = img.shape[0] / 2
+        width = img.shape[1] // 2
+        height = img.shape[0] // 2
         XTest[i] = cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YTrain[i]):
             YTrain[i][idx] = w2i[symbol]
