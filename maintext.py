@@ -134,8 +134,8 @@ def main():
             YTrain[i][idx] = w2i[symbol]
     for i in range(len(XVal)):
         img = (255. - XVal[i]) / 255.
-        #width = int(img.shape[1] // 2)
-        #height = int(img.shape[0] // 2)
+        #width = int(img.shape[1] // 4)
+        #height = int(img.shape[0] // 4)
         XVal[i] = img#cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YVal[i]):
             YVal[i][idx] = w2i[symbol]
@@ -165,7 +165,7 @@ def main():
     not_improved = 0
 
     for super_epoch in range(10000):
-       model_train.fit(inputs,outputs, batch_size = 4, epochs = 5, verbose = 0)
+       model_train.fit(inputs,outputs, batch_size = 2, epochs = 5, verbose = 2)
        SER = validateModel(model_pred, XVal, YVal, i2w)
        print(f"EPOCH {super_epoch} | CER {SER}")
        if SER < best_ser:

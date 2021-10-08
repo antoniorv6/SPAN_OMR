@@ -51,8 +51,8 @@ def data_preparation_CTC(X, Y, height):
 
     for i, img in enumerate(X):
         X_train[i, 0:img.shape[0], 0:img.shape[1],0] = img
-        L_train[i] = img.shape[1] // 8 # TODO Calcular el width_reduction de la CRNN
-
+        L_train[i] = (max_image_width // 8) * (max_image_height // 32) # TODO Calcular el width_reduction de la CRNN
+        
     # Y_train, T_train
     max_length_seq = max([len(w) for w in Y])
 
