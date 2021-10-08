@@ -105,7 +105,8 @@ def validateModel(model, X, Y, i2w):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Program arguments to work")
-    parser.add_argument('--checkpoint', type=str, default=None, help="Model name")
+    parser.add_argument('--checkpoint', type=str, default=None, help="Model checkpoint to load")
+    parser.add_argument('--save_path', type=str, help="Path to save the checkpoint")
     args = parser.parse_args()
     return args
 
@@ -169,7 +170,7 @@ def main():
        print(f"EPOCH {super_epoch} | CER {SER}")
        if SER < best_ser:
            print("CER improved - Saving epoch")
-           model_train.save_weights(f"SPAN.h5")
+           model_train.save_weights(args.save_path)
            best_ser = SER
            not_improved = 0
        else:
