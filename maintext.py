@@ -114,8 +114,6 @@ def main():
     
     args = parse_arguments()
 
-    # En el paper usan XVal como conjunto de Test y XTest como conjunto de validación, vamos a respetar
-    # ese procedimiento
     XTrain, YTrain, XVal, YVal, XTest, YTest = load_data_text()
 
     #XTrain, XTest, YTrain, YTest = train_test_split(X,Y, test_size=0.1)
@@ -123,8 +121,8 @@ def main():
 
     XTrain = np.array(XTrain)
     YTrain = np.array(YTrain)
-    XTest = np.array(XTest)
-    YTest = np.array(YTest)
+    XVal = np.array(XVal)
+    YVal = np.array(YVal)
 
     for i in range(len(XTrain)):
         img = (255. - XTrain[i]) / 255.
@@ -133,13 +131,13 @@ def main():
         XTrain[i] = img#cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YTrain[i]):
             YTrain[i][idx] = w2i[symbol]
-    for i in range(len(XTest)):
-        img = (255. - XTest[i]) / 255.
+    for i in range(len(XVal)):
+        img = (255. - XVal[i]) / 255.
         #width = int(img.shape[1] // 2)
         #height = int(img.shape[0] // 2)
-        XTest[i] = img#cv2.resize(img, (width, height))
-        for idx, symbol in enumerate(YTest[i]):
-            YTest[i][idx] = w2i[symbol]
+        XVal[i] = img#cv2.resize(img, (width, height))
+        for idx, symbol in enumerate(YVal[i]):
+            YVal[i][idx] = w2i[symbol]
 
     model_train, model_pred = get_model(input_shape=(None, None, 1), out_tokens=len(w2i))
     
@@ -167,7 +165,7 @@ def main():
 
     for super_epoch in range(10000):
        model_train.fit(inputs,outputs, batch_size = 4, epochs = 5, verbose = 0)
-       SER = validateModel(model_pred, XTest, YTest, i2w)
+       SER = validateModel(model_pred, XVal, YVal, i2w)
        print(f"EPOCH {super_epoch} | CER {SER}")
        if SER < best_ser:
            print("CER improved - Saving epoch")
