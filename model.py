@@ -1,7 +1,9 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Add, Input, MaxPooling2D, BatchNormalization, Dropout, Reshape, Permute, Lambda
+from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Add, Input, Reshape, Permute, Lambda
+from tensorflow_addons.layers import InstanceNormalization
 import tensorflow.keras.backend as K
 from tensorflow.keras.models import Model
+from MixedDropout import MixedDropout
 
 
 def ctc_lambda_func(args):
@@ -13,20 +15,21 @@ def conv_block(input,filters, kernel, pad, stride):
     
     x = Conv2D(filters, kernel_size=kernel, padding=pad, activation='relu')(input)
     x = Conv2D(filters, kernel_size=kernel, padding=pad, activation='relu')(x)
-    x = BatchNormalization()(x)
+    x = InstanceNormalization()(x)
     x = Conv2D(filters, kernel_size=kernel, padding=pad, strides=stride, activation='relu')(x)
+    x = MixedDropout()(x)
     
     return x
 
 def dsc_block(input, kernel, pad, stride):
 
     x = DepthwiseConv2D(kernel_size=kernel, padding=pad, strides=stride, activation='relu')(input)
-    x = Dropout(0.2)(x)
+    x = MixedDropout()(x)
     x = DepthwiseConv2D(kernel_size=kernel, padding=pad, strides=stride, activation='relu')(x) 
-    x = Dropout(0.2)(x)
-    x = BatchNormalization()(x)
+    x = MixedDropout()(x)
+    x = InstanceNormalization()(x)
     x = DepthwiseConv2D(kernel_size=kernel, padding=pad, strides=stride, activation='relu')(x)
-    x = Dropout(0.2)(x)
+    x = MixedDropout()(x)
     x = Add()([input, x])
     return x
 

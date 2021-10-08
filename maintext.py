@@ -10,6 +10,7 @@ import random
 import itertools
 import pickle
 import tensorflow as tf
+import argparse
 
 CONST_IMG_DIR = "Data/PAGES/IMG/"
 CONST_AGNOSTIC_DIR = "Data/PAGES/AGNOSTIC/"
@@ -36,7 +37,7 @@ def load_data():
 def createDataArray(dataDict, folder):
     X = []
     Y = []
-    for img in tqdm.tqdm(dataDict.keys()):
+    for img in dataDict.keys():
         lines = dataDict[img]['lines']
         linearray = []
         for line in lines:
@@ -102,8 +103,19 @@ def validateModel(model, X, Y, i2w):
     ser = 100. * acc_ed_ser / acc_len_ser
     return ser
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Program arguments to work")
+    parser.add_argument('--checkpoint', type=str, default=None, help="Model name")
+    args = parser.parse_args()
+    return args
+
 
 def main():
+    
+    args = parse_arguments()
+
+    # En el paper usan XVal como conjunto de Test y XTest como conjunto de validación, vamos a respetar
+    # ese procedimiento
     XTrain, YTrain, XVal, YVal, XTest, YTest = load_data_text()
 
     #XTrain, XTest, YTrain, YTest = train_test_split(X,Y, test_size=0.1)
@@ -130,7 +142,14 @@ def main():
             YTest[i][idx] = w2i[symbol]
 
     model_train, model_pred = get_model(input_shape=(None, None, 1), out_tokens=len(w2i))
-
+    
+    if args.checkpoint != None:
+        print(f"Loading checkpoint: {args.checkpoint}")
+        model_train.load_weights(args.checkpoint)
+    else:
+        print(f"Saving checkpoint")
+        model_train.save_weights("checkpoint.h5")
+    
     X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, None)
 
     print('Training with ' + str(X_train.shape[0]) + ' samples.')
@@ -152,7 +171,7 @@ def main():
        print(f"EPOCH {super_epoch} | CER {SER}")
        if SER < best_ser:
            print("CER improved - Saving epoch")
-           model_pred.save(f"SPAN_OMR.h5")
+           model_train.save_weights(f"SPAN.h5")
            best_ser = SER
            not_improved = 0
        else:

@@ -1,4 +1,5 @@
 Data/
 env/
+venv/
 __pycache__/
 *.npy
