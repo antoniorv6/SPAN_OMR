@@ -89,7 +89,6 @@ def validateModel(model, X, Y, i2w):
             if c < len(i2w):  # CTC Blank must be ignored
                 decoded.append(i2w[c])
 
-        decoded.append('<eos>')
         groundtruth = [i2w[label] for label in Y[i]]
 
         if(i == randomindex):
@@ -147,9 +146,6 @@ def main():
     if args.checkpoint != None:
         print(f"Loading checkpoint: {args.checkpoint}")
         model_train.load_weights(args.checkpoint)
-    else:
-        print(f"Saving checkpoint")
-        model_train.save_weights("checkpoint.h5")
     
     X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, None)
 
