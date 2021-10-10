@@ -1,9 +1,8 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Add, Input, Reshape, Permute, Lambda
-from tensorflow_addons.layers import InstanceNormalization
+from tensorflow.keras.layers import Conv2D, Input, Reshape, Permute, Lambda
 import tensorflow.keras.backend as K
 from tensorflow.keras.models import Model
-from MixedDropout import MixedDropout
+from NetBlocks import *
 
 
 def ctc_lambda_func(args):
@@ -11,27 +10,27 @@ def ctc_lambda_func(args):
     y_pred = y_pred[:, :, :]
     return K.ctc_batch_cost(labels, y_pred, input_length, label_length)
 
-def conv_block(input,filters, kernel, pad, stride):
-    
-    x = Conv2D(filters, kernel_size=kernel, padding=pad, activation='relu')(input)
-    x = Conv2D(filters, kernel_size=kernel, padding=pad, activation='relu')(x)
-    x = InstanceNormalization()(x)
-    x = Conv2D(filters, kernel_size=kernel, padding=pad, strides=stride, activation='relu')(x)
-    x = MixedDropout()(x)
-    
-    return x
+#def conv_block(input,filters, kernel, pad, stride):
+#    
+#    x = Conv2D(filters, kernel_size=kernel, padding=pad, activation='relu')(input)
+#    x = Conv2D(filters, kernel_size=kernel, padding=pad, activation='relu')(x)
+#    x = InstanceNormalization()(x)
+#    x = Conv2D(filters, kernel_size=kernel, padding=pad, strides=stride, activation='relu')(x)
+#    x = MixedDropout()(x)
+#    
+#    return x
 
-def dsc_block(input, kernel, pad, stride):
-
-    x = DepthwiseConv2D(kernel_size=kernel, padding=pad, strides=stride, activation='relu')(input)
-    x = MixedDropout()(x)
-    x = DepthwiseConv2D(kernel_size=kernel, padding=pad, strides=stride, activation='relu')(x) 
-    x = MixedDropout()(x)
-    x = InstanceNormalization()(x)
-    x = DepthwiseConv2D(kernel_size=kernel, padding=pad, strides=stride, activation='relu')(x)
-    x = MixedDropout()(x)
-    x = Add()([input, x])
-    return x
+#def dsc_block(input, kernel, pad, stride):
+#
+#    x = DepthwiseConv2D(kernel_size=kernel, padding=pad, strides=stride, activation='relu')(input)
+#    x = MixedDropout()(x)
+#    x = DepthwiseConv2D(kernel_size=kernel, padding=pad, strides=stride, activation='relu')(x) 
+#    x = MixedDropout()(x)
+#    x = InstanceNormalization()(x)
+#    x = DepthwiseConv2D(kernel_size=kernel, padding=pad, strides=stride, activation='relu')(x)
+#    x = MixedDropout()(x)
+#    x = Add()([input, x])
+#    return x
 
 
 
@@ -41,35 +40,35 @@ def get_model(input_shape, out_tokens):
 
     ### CB1
     
-    x = conv_block(input, 32, (3,3), "same", (1,1))
+    x = ConvBlock(32, (3,3), "same", (1,1))(input)
     #x = MaxPooling2D()(x)
 
     ### CB2
     
-    x = conv_block(x, 64, (3,3), "same", (2,2))
+    x = ConvBlock(64, (3,3), "same", (2,2))(x)
 
     ### CB3
     
-    x = conv_block(x, 128, (3,3), "same", (2,2))
+    x = ConvBlock(128, (3,3), "same", (2,2))(x)
 
     ### CB4
 
-    x = conv_block(x, 256, (3,3), "same", (2,2))
+    x = ConvBlock(256, (3,3), "same", (2,2))(x)
 
     ### CB5
 
-    x = conv_block(x, 512, (3,3), "same", (2,1))
+    x = ConvBlock(512, (3,3), "same", (2,1))(x)
 
     ### CB6
     
-    x = conv_block(x, 512, (3,3), "same", (2,1))
+    x = ConvBlock(512, (3,3), "same", (2,1))(x)
 
     ### DSCB_Place
 
-    x = dsc_block(x, (3,3), "same", (1,1))
-    x = dsc_block(x, (3,3), "same", (1,1))
-    x = dsc_block(x, (3,3), "same", (1,1))
-    x = dsc_block(x, (3,3), "same", (1,1))
+    x = DSCBlock((3,3), "same", (1,1))(x)
+    x = DSCBlock((3,3), "same", (1,1))(x)
+    x = DSCBlock((3,3), "same", (1,1))(x)
+    x = DSCBlock((3,3), "same", (1,1))(x)
 
     x = Conv2D(out_tokens+1, kernel_size=(5,5), padding="same", activation="softmax")(x)
 

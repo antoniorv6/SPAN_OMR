@@ -125,18 +125,20 @@ def main():
     XVal = np.array(XVal)
     YVal = np.array(YVal)
 
+    ratio = 150 / 300
+
     for i in range(len(XTrain)):
         img = (255. - XTrain[i]) / 255.
-        #width = int(img.shape[1] // 4)
-        #height = int(img.shape[0] // 4)
-        XTrain[i] = img#cv2.resize(img, (width, height))
+        width = int(np.ceil(img.shape[1] * ratio))
+        height = int(np.ceil(img.shape[0] * ratio))
+        XTrain[i] = cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YTrain[i]):
             YTrain[i][idx] = w2i[symbol]
     for i in range(len(XVal)):
         img = (255. - XVal[i]) / 255.
-        #width = int(img.shape[1] // 4)
-        #height = int(img.shape[0] // 4)
-        XVal[i] = img#cv2.resize(img, (width, height))
+        width = int(np.ceil(img.shape[1] * ratio))
+        height = int(np.ceil(img.shape[0] * ratio))
+        XVal[i] = cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YVal[i]):
             YVal[i][idx] = w2i[symbol]
 
@@ -166,12 +168,12 @@ def main():
 
     for super_epoch in range(10000):
        model_train.fit(inputs,outputs, batch_size = 2, epochs = 5, verbose = 2)
-       SER = validateModel(model_pred, XVal, YVal, i2w)
-       print(f"EPOCH {super_epoch} | CER {SER}")
-       if SER < best_ser:
+       CER = validateModel(model_pred, XVal, YVal, i2w)
+       print(f"EPOCH {super_epoch} | CER {CER}")
+       if CER < best_ser:
            print("CER improved - Saving epoch")
            model_train.save_weights(args.save_path)
-           best_ser = SER
+           best_ser = CER
            not_improved = 0
        else:
            not_improved += 1
