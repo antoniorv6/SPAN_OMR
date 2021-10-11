@@ -1,5 +1,6 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, Input, Reshape, Permute, Lambda
+from tensorflow.keras.layers import Conv2D, Input, Reshape, Permute, Lambda, GlobalMaxPool2D
+from tensorflow_addons.layers import AdaptiveMaxPooling1D
 import tensorflow.keras.backend as K
 from tensorflow.keras.models import Model
 from NetBlocks import *
@@ -33,15 +34,13 @@ def ctc_lambda_func(args):
 #    return x
 
 
-
-def get_model(input_shape, out_tokens):
+def get_base_model(input_shape):
     
     input = Input(shape=input_shape, name='the_input')
 
     ### CB1
     
     x = ConvBlock(32, (3,3), "same", (1,1))(input)
-    #x = MaxPooling2D()(x)
 
     ### CB2
     
@@ -70,10 +69,19 @@ def get_model(input_shape, out_tokens):
     x = DSCBlock((3,3), "same", (1,1))(x)
     x = DSCBlock((3,3), "same", (1,1))(x)
 
-    x = Conv2D(out_tokens+1, kernel_size=(5,5), padding="same", activation="softmax")(x)
+    return input, x
 
+
+def get_line_model(input_shape, out_tokens):
+    
+    input, out_base = get_base_model(input_shape)
+
+    x = AdaptiveMaxPooling1D(1)(out_base)
+    x = Conv2D(out_tokens+1, kernel_size=(5,5), padding="same", activation="softmax")(x)
     x = Permute((2, 1, 3))(x)
     y_pred = Reshape(target_shape=(-1, out_tokens+1), name='reshape')(x)
+
+    model_base = Model(inputs=input, outputs=out_base)
 
     model_pr = Model(inputs=input, outputs=y_pred)
     model_pr.summary()
@@ -91,4 +99,34 @@ def get_model(input_shape, out_tokens):
 
     model_tr.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer='adam')
 
-    return model_tr, model_pr
+    return model_tr, model_pr, model_base
+
+
+def get_paragraph_model(input_shape, out_tokens):
+
+    input, out_base = get_base_model(input_shape)
+
+    x = Conv2D(out_tokens+1, kernel_size=(5,5), padding="same", activation="softmax")(out_base)
+
+    x = Permute((2, 1, 3))(x)
+    y_pred = Reshape(target_shape=(-1, out_tokens+1), name='reshape')(x)
+
+    model_base = Model(inputs=input, outputs=out_base)
+
+    model_pr = Model(inputs=input, outputs=y_pred)
+    model_pr.summary()
+
+    labels = Input(name='the_labels',shape=[None], dtype='float32')
+    input_length = Input(name='input_length', shape=[1], dtype='int64')
+    label_length = Input(name='label_length', shape=[1], dtype='int64')
+
+    loss_out = Lambda(
+        ctc_lambda_func, output_shape=(1,),
+        name='ctc')([y_pred, labels, input_length, label_length])
+
+    model_tr = Model(inputs=[input, labels, input_length, label_length],
+                  outputs=loss_out)
+
+    model_tr.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer='adam')
+
+    return model_tr, model_pr, model_base

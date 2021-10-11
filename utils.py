@@ -41,7 +41,7 @@ def make_vocabulary(YSequences, pathToSave, nameOfVoc):
     return w2i, i2w
 
 # Dados vectores de X (imagenes) e Y (secuencia de etiquetas numéricas -no one hot- devuelve los 4 vectores necesarios para CTC)
-def data_preparation_CTC(X, Y, height):
+def data_preparation_CTC(X, Y):
     # X_train, L_train
     max_image_width = max([img.shape[1] for img in X])
     max_image_height = max([img.shape[0] for img in X])

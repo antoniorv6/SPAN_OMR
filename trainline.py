@@ -1,4 +1,4 @@
-from model import get_model
+from model import get_line_model
 from utils import levenshtein, check_and_retrieveVocabulary, data_preparation_CTC
 
 from sklearn.model_selection import train_test_split
@@ -14,7 +14,7 @@ import argparse
 
 CONST_IMG_DIR = "Data/PAGES/IMG/"
 CONST_AGNOSTIC_DIR = "Data/PAGES/AGNOSTIC/"
-PCKL_PATH = "Data/IAM_paragraph/"
+PCKL_PATH = "Data/IAM_lines/"
 
 config = tf.compat.v1.ConfigProto(gpu_options = 
                          tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8)
@@ -38,14 +38,12 @@ def createDataArray(dataDict, folder):
     X = []
     Y = []
     for img in dataDict.keys():
-        lines = dataDict[img]['lines']
+        line_stripped = dataDict[img]['text'].split(" ")
         linearray = []
-        for line in lines:
-            line_stripped = line['text'].split(" ")
-            for l in line_stripped:
-                for char in l:
-                    linearray += char
-                linearray += ['<s>']
+        for l in line_stripped:
+            for char in l:
+                linearray += char
+            linearray += ['<s>']
         Y.append(linearray)
         X.append(cv2.imread(f"{PCKL_PATH}/{folder}/{img}", 0))
     
@@ -141,13 +139,13 @@ def main():
         for idx, symbol in enumerate(YVal[i]):
             YVal[i][idx] = w2i[symbol]
 
-    model_train, model_pred = get_model(input_shape=(None, None, 1), out_tokens=len(w2i))
+    model_train, model_pred, model_base = get_line_model(input_shape=(None, None, 1), out_tokens=len(w2i))
     
     if args.checkpoint != None:
         print(f"Loading checkpoint: {args.checkpoint}")
         model_train.load_weights(args.checkpoint)
-    
-    X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, None)
+
+    X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain)
 
     print('Training with ' + str(X_train.shape[0]) + ' samples.')
     
@@ -160,21 +158,16 @@ def main():
     outputs = {'ctc': np.zeros([len(X_train)])}
     
     best_ser = 10000
-    not_improved = 0
 
-    for super_epoch in range(10000):
-       model_train.fit(inputs,outputs, batch_size = 2, epochs = 5, verbose = 2)
+    for super_epoch in range(5000):
+       model_train.fit(inputs,outputs, batch_size = 1, epochs = 1, verbose = 1)
        CER = validateModel(model_pred, XVal, YVal, i2w)
        print(f"EPOCH {super_epoch} | CER {CER}")
        if CER < best_ser:
            print("CER improved - Saving epoch")
            model_train.save_weights(args.save_path)
+           model_base.save_weights("models/SPAN_LINES_PRET.h5")
            best_ser = CER
-           not_improved = 0
-       else:
-           not_improved += 1
-           if not_improved == 5:
-               break
 
 if __name__ == "__main__":
     main()
