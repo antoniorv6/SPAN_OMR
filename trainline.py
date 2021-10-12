@@ -160,7 +160,7 @@ def main():
     best_ser = 10000
 
     for super_epoch in range(5000):
-       model_train.fit(inputs,outputs, batch_size = 1, epochs = 1, verbose = 1)
+       model_train.fit(inputs,outputs, batch_size = 4, epochs = 1, verbose = 2)
        CER = validateModel(model_pred, XVal, YVal, i2w)
        print(f"EPOCH {super_epoch} | CER {CER}")
        if CER < best_ser:
