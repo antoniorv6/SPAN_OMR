@@ -122,7 +122,7 @@ def main():
     XVal = np.array(XVal)
     YVal = np.array(YVal)
 
-    ratio = 150 / 300
+    ratio = 0.8#150 / 300
 
     for i in range(len(XTrain)):
         img = (255. - XTrain[i]) / 255.
@@ -160,7 +160,7 @@ def main():
     best_ser = 10000
 
     for super_epoch in range(5000):
-       model_train.fit(inputs,outputs, batch_size = 4, epochs = 1, verbose = 2)
+       model_train.fit(inputs,outputs, batch_size = 1, epochs = 1, verbose = 2)
        CER = validateModel(model_pred, XVal, YVal, i2w)
        print(f"EPOCH {super_epoch} | CER {CER}")
        if CER < best_ser:

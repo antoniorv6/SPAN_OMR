@@ -8,3 +8,6 @@ RUN pip install --upgrade pip
 RUN pip install opencv-python
 RUN pip install sklearn
 RUN pip install tqdm
+RUN pip install tensorflow_addons
+
+RUN chmod +x *.sh
