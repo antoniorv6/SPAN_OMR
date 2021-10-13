@@ -50,14 +50,26 @@ class ConvBlock():
             x = self.dropout(x)
         
         return x
+
+
+class DepthSepConvBlock():
+    def __init__(self, filters, krn_sz, pad, stride=(1,1)):
+        super(DepthSepConvBlock, self).__init__()
+        self.depth_conv = DepthwiseConv2D(kernel_size=krn_sz, dilation_rate=(1,1), strides=stride, padding=pad)
+        self.point_conv = Conv2D(filters, kernel_size=(1,1), dilation_rate=(1,1))
     
+    def __call__(self, x):
+        x = self.depth_conv(x)
+        x = self.point_conv(x)
+        return x
+
 class DSCBlock():
 
     def __init__(self, kernel, pad, stride):
         super(DSCBlock, self).__init__()
-        self.conv1 = DepthwiseConv2D(kernel_size=kernel, padding=pad)
-        self.conv2 = DepthwiseConv2D(kernel_size=kernel, padding=pad)
-        self.conv3 = DepthwiseConv2D(kernel_size=kernel, strides=stride, padding=pad)
+        self.conv1 = DepthSepConvBlock(filters=512, krn_sz=kernel, pad=pad)
+        self.conv2 = DepthSepConvBlock(filters=512, krn_sz=kernel, pad=pad)
+        self.conv3 = DepthSepConvBlock(filters=512, krn_sz=kernel, stride=stride, pad=pad)
         self.activation = ReLU()
         self.dropout = MixedDropout()
         self.norm = InstanceNormalization()
