@@ -151,7 +151,7 @@ def main():
         print(f"Loading weights from pretrained model: {args.pretrain}")
         model_base.load_weights(args.pretrain)
 
-    X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain)
+    X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, False)
 
     print('Training with ' + str(X_train.shape[0]) + ' samples.')
     

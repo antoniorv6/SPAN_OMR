@@ -145,7 +145,7 @@ def main():
         print(f"Loading checkpoint: {args.checkpoint}")
         model_train.load_weights(args.checkpoint)
 
-    X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain)
+    X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, True)
 
     print('Training with ' + str(X_train.shape[0]) + ' samples.')
     

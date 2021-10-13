@@ -55,7 +55,7 @@ def data_preparation_CTC(X, Y, lines):
             L_train[i] = (max_image_width // 8)
         else:
             L_train[i] = (max_image_width // 8) * (max_image_height // 32)
-
+            
     # Y_train, T_train
     max_length_seq = max([len(w) for w in Y])
 
