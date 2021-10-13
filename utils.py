@@ -41,7 +41,7 @@ def make_vocabulary(YSequences, pathToSave, nameOfVoc):
     return w2i, i2w
 
 # Dados vectores de X (imagenes) e Y (secuencia de etiquetas numéricas -no one hot- devuelve los 4 vectores necesarios para CTC)
-def data_preparation_CTC(X, Y):
+def data_preparation_CTC(X, Y, lines):
     # X_train, L_train
     max_image_width = max([img.shape[1] for img in X])
     max_image_height = max([img.shape[0] for img in X])
@@ -51,8 +51,11 @@ def data_preparation_CTC(X, Y):
 
     for i, img in enumerate(X):
         X_train[i, 0:img.shape[0], 0:img.shape[1],0] = img
-        L_train[i] = (max_image_width // 8) * (max_image_height // 32) # TODO Calcular el width_reduction de la CRNN
-        
+        if lines:
+            L_train[i] = (max_image_width // 8)
+        else:
+            L_train[i] = (max_image_width // 8) * (max_image_height // 32)
+
     # Y_train, T_train
     max_length_seq = max([len(w) for w in Y])
 
