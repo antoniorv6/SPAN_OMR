@@ -77,7 +77,7 @@ def get_line_model(input_shape, out_tokens):
     input, out_base = get_base_model(input_shape)
 
     x = AdaptiveMaxPooling1D(1)(out_base)
-    x = Conv2D(out_tokens+1, kernel_size=(5,5), padding="same", activation="softmax")(x)
+    x = Conv2D(out_tokens+1, kernel_size=(1,1), padding="same", activation="softmax")(x)
     x = Permute((2,1,3))(x)
     y_pred = tf.squeeze(x,axis=2)
     #x = Permute((2, 1, 3))(x)
