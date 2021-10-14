@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, Input, Reshape, Permute, Lambda, GlobalMaxPool2D
+from tensorflow.keras.layers import Conv2D, Input, Reshape, Permute, Lambda
 from tensorflow_addons.layers import AdaptiveMaxPooling1D
 import tensorflow.keras.backend as K
 from tensorflow.keras.models import Model
@@ -78,8 +78,10 @@ def get_line_model(input_shape, out_tokens):
 
     x = AdaptiveMaxPooling1D(1)(out_base)
     x = Conv2D(out_tokens+1, kernel_size=(5,5), padding="same", activation="softmax")(x)
-    x = Permute((2, 1, 3))(x)
-    y_pred = Reshape(target_shape=(-1, out_tokens+1), name='reshape')(x)
+    x = Permute((2,1,3))(x)
+    y_pred = tf.squeeze(x,axis=2)
+    #x = Permute((2, 1, 3))(x)
+    #y_pred = Reshape(target_shape=(-1, out_tokens+1), name='reshape')(x)
 
     model_base = Model(inputs=input, outputs=out_base)
 
