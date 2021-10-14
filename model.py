@@ -3,6 +3,7 @@ from tensorflow.keras.layers import Conv2D, Input, Reshape, Permute, Lambda
 from tensorflow_addons.layers import AdaptiveMaxPooling1D
 import tensorflow.keras.backend as K
 from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
 from NetBlocks import *
 
 
@@ -99,7 +100,7 @@ def get_line_model(input_shape, out_tokens):
     model_tr = Model(inputs=[input, labels, input_length, label_length],
                   outputs=loss_out)
 
-    model_tr.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer='adam')
+    model_tr.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=Adam(learning_rate=0.0001, amsgrad=False))
 
     return model_tr, model_pr, model_base
 
@@ -129,6 +130,6 @@ def get_paragraph_model(input_shape, out_tokens):
     model_tr = Model(inputs=[input, labels, input_length, label_length],
                   outputs=loss_out)
 
-    model_tr.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer='adam')
+    model_tr.compile(loss={'ctc': lambda y_true, y_pred: y_pred}, optimizer=Adam(learning_rate=0.0001, amsgrad=False))
 
     return model_tr, model_pr, model_base
