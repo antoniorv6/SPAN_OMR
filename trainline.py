@@ -11,6 +11,7 @@ import itertools
 import pickle
 import tensorflow as tf
 import argparse
+import editdistance
 
 CONST_IMG_DIR = "Data/PAGES/IMG/"
 CONST_AGNOSTIC_DIR = "Data/PAGES/AGNOSTIC/"
@@ -22,6 +23,42 @@ config = tf.compat.v1.ConfigProto(gpu_options =
 config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)
 tf.compat.v1.keras.backend.set_session(session)
+
+def edit_cer_from_list(truth, pred):
+    edit = 0
+    for t, p in zip(truth, pred):
+        edit += editdistance.eval(t, p)
+    return edit
+
+
+def edit_wer_from_list(truth, pred):
+    edit = 0
+    separation_marks = ["?", ".", ";", ",", "!", "\n"]
+    for pred, gt in zip(pred, truth):
+        for mark in separation_marks:
+            gt.replace(mark, " {} ".format(mark))
+            pred.replace(mark, " {} ".format(mark))
+        gt = gt.split(" ")
+        pred = pred.split(" ")
+        while '' in gt:
+            gt.remove('')
+        while '' in pred:
+            pred.remove('')
+        edit += editdistance.eval(gt, pred)
+    return edit
+
+def nb_words_from_list(list_gt):
+    separation_marks = ["?", ".", ";", ",", "!", "\n"]
+    len_ = 0
+    for gt in list_gt:
+        for mark in separation_marks:
+            gt.replace(mark, " {} ".format(mark))
+        gt = gt.split(" ")
+        while '' in gt:
+            gt.remove('')
+        len_ += len(gt)
+    return len_
+
 
 def load_data():
     X = []
@@ -37,15 +74,13 @@ def load_data():
 def createDataArray(dataDict, folder):
     X = []
     Y = []
-    for img in dataDict.keys():
-        line_stripped = dataDict[img]['text'].split(" ")
-        linearray = []
-        for l in line_stripped:
-            for char in l:
-                linearray += char
-            linearray += ['<s>']
-        Y.append(linearray)
-        X.append(cv2.imread(f"{PCKL_PATH}/{folder}/{img}", 0))
+    for sample in dataDict.keys():
+        if type(dataDict[sample]) == str:
+            Y.append([char for char in dataDict[sample]])
+        else:
+            Y.append([char for char in dataDict[sample]['text']])
+
+        X.append(cv2.imread(f"{PCKL_PATH}/{folder}/{sample}", 0))
     
     return X, Y
 
@@ -93,12 +128,18 @@ def validateModel(model, X, Y, i2w):
             print(f"Prediction - {decoded}")
             print(f"True - {groundtruth}")
 
-        acc_len_ser += len(Y[i])
-        acc_ed_ser += levenshtein(decoded, groundtruth)
+        characters = len("".join(groundtruth))
+        words = nb_words_from_list(["".join(groundtruth)])
+
+        ed_cer = edit_cer_from_list(["".join(decoded)], ["".join(groundtruth)])
 
 
-    ser = 100. * acc_ed_ser / acc_len_ser
-    return ser
+        ed_wer = edit_wer_from_list(["".join(decoded)], ["".join(groundtruth)])
+
+
+    cer = 100. * ed_cer / characters
+    wer = 100. * ed_wer / characters
+    return cer, wer
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Program arguments to work")
@@ -161,8 +202,8 @@ def main():
 
     for super_epoch in range(5000):
        model_train.fit(inputs,outputs, batch_size = 4, epochs = 1, verbose = 2)
-       CER = validateModel(model_pred, XVal, YVal, i2w)
-       print(f"EPOCH {super_epoch} | CER {CER}")
+       CER, WER = validateModel(model_pred, XVal, YVal, i2w)
+       print(f"EPOCH {super_epoch} | CER {CER} | WER {WER}")
        if CER < best_ser:
            print("CER improved - Saving epoch")
            model_train.save_weights(args.save_path)
