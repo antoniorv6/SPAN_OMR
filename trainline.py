@@ -105,11 +105,9 @@ def load_data_text():
     return trainX, trainY, valX, valY, testX, testY
 
 def validateModel(model, X, Y, i2w):
-    acc_ed_ser = 0
-    acc_len_ser = 0
-
     randomindex = random.randint(0, len(X)-1)
-
+    acc_cer = 0
+    acc_wer = 0
     for i in range(len(X)):
         pred = model.predict(np.expand_dims(np.expand_dims(X[i],axis=0),axis=-1))[0]
 
@@ -137,8 +135,12 @@ def validateModel(model, X, Y, i2w):
         ed_wer = edit_wer_from_list(["".join(decoded)], ["".join(groundtruth)])
 
 
-    cer = 100. * ed_cer / characters
-    wer = 100. * ed_wer / characters
+        acc_cer += ed_cer / characters
+        acc_wer += ed_wer / words
+    
+    cer = 100.*acc_cer
+    wer = 100.*acc_wer
+    
     return cer, wer
 
 def parse_arguments():
