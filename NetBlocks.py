@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras.layers import Dropout, SpatialDropout2D
-from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Add, ReLU
+from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, ReLU
 import random
 from tensorflow_addons.layers.normalizations import InstanceNormalization
 

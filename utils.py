@@ -65,8 +65,25 @@ def data_preparation_CTC(X, Y, lines):
         Y_train[i, 0:len(seq)] = seq
         T_train[i] = len(seq)
 
+    inputs = {'the_input': X_train,
+                 'the_labels': Y_train,
+                 'input_length': L_train,
+                 'label_length': T_train,
+                 }
+    
+    outputs = {'ctc': np.zeros([len(X_train)])}
 
-    return X_train, Y_train, L_train, T_train
+    return inputs, outputs
+
+def ctc_batch_generator(BATCH_SIZE, X, Y, lines):
+    index = 0
+    while True:
+        BatchX = X[index:index + BATCH_SIZE]
+        BatchY = Y[index:index + BATCH_SIZE]
+
+        yield data_preparation_CTC(BatchX, BatchY, lines)
+
+        index = (index + BATCH_SIZE) % len(X)
 
 
 def levenshtein(a,b):

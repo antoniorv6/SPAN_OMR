@@ -1,5 +1,5 @@
 from model import get_paragraph_model
-from utils import levenshtein, check_and_retrieveVocabulary, data_preparation_CTC
+from utils import levenshtein, check_and_retrieveVocabulary, ctc_batch_generator
 
 from sklearn.model_selection import train_test_split
 import cv2
@@ -11,6 +11,8 @@ import itertools
 import pickle
 import tensorflow as tf
 import argparse
+import editdistance
+import tqdm
 
 CONST_IMG_DIR = "Data/PAGES/IMG/"
 CONST_AGNOSTIC_DIR = "Data/PAGES/AGNOSTIC/"
@@ -23,31 +25,52 @@ config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)
 tf.compat.v1.keras.backend.set_session(session)
 
-def load_data():
-    X = []
-    Y = []
-    for file in os.listdir(CONST_IMG_DIR):
-        X.append(cv2.imread(f"{CONST_IMG_DIR}{file}", 0))
-        with open(f"{CONST_AGNOSTIC_DIR}{file.split('.')[0]}.agnostic") as agnosticfile:
-            line = agnosticfile.readline()
-            Y.append(['<sos>'] + line.split(" ") + ['<eos>'])
-    
-    return X, Y
+def edit_cer_from_list(truth, pred):
+    edit = 0
+    for t, p in zip(truth, pred):
+        edit += editdistance.eval(t, p)
+    return edit
+
+
+def edit_wer_from_list(truth, pred):
+    edit = 0
+    separation_marks = ["?", ".", ";", ",", "!", "\n"]
+    for pred, gt in zip(pred, truth):
+        for mark in separation_marks:
+            gt.replace(mark, " {} ".format(mark))
+            pred.replace(mark, " {} ".format(mark))
+        gt = gt.split(" ")
+        pred = pred.split(" ")
+        while '' in gt:
+            gt.remove('')
+        while '' in pred:
+            pred.remove('')
+        edit += editdistance.eval(gt, pred)
+    return edit
+
+def nb_words_from_list(list_gt):
+    separation_marks = ["?", ".", ";", ",", "!", "\n"]
+    len_ = 0
+    for gt in list_gt:
+        for mark in separation_marks:
+            gt.replace(mark, " {} ".format(mark))
+        gt = gt.split(" ")
+        while '' in gt:
+            gt.remove('')
+        len_ += len(gt)
+    return len_
+
 
 def createDataArray(dataDict, folder):
     X = []
     Y = []
-    for img in dataDict.keys():
-        lines = dataDict[img]['lines']
-        linearray = []
-        for line in lines:
-            line_stripped = line['text'].split(" ")
-            for l in line_stripped:
-                for char in l:
-                    linearray += char
-                linearray += ['<s>']
-        Y.append(linearray)
-        X.append(cv2.imread(f"{PCKL_PATH}/{folder}/{img}", 0))
+    for sample in dataDict.keys():
+        if type(dataDict[sample]) == str:
+            Y.append([char for char in dataDict[sample]])
+        else:
+            Y.append([char for char in dataDict[sample]['text']])
+
+        X.append(cv2.imread(f"{PCKL_PATH}/{folder}/{sample}", 0))
     
     return X, Y
 
@@ -72,11 +95,9 @@ def load_data_text():
     return trainX, trainY, valX, valY, testX, testY
 
 def validateModel(model, X, Y, i2w):
-    acc_ed_ser = 0
-    acc_len_ser = 0
-
     randomindex = random.randint(0, len(X)-1)
-
+    acc_cer = 0
+    acc_wer = 0
     for i in range(len(X)):
         pred = model.predict(np.expand_dims(np.expand_dims(X[i],axis=0),axis=-1))[0]
 
@@ -95,12 +116,23 @@ def validateModel(model, X, Y, i2w):
             print(f"Prediction - {decoded}")
             print(f"True - {groundtruth}")
 
-        acc_len_ser += len(Y[i])
-        acc_ed_ser += levenshtein(decoded, groundtruth)
+        characters = len("".join(groundtruth))
+        
+        words = nb_words_from_list(["".join(groundtruth)])
+
+        ed_cer = edit_cer_from_list(["".join(decoded)], ["".join(groundtruth)])
 
 
-    ser = 100. * acc_ed_ser / acc_len_ser
-    return ser
+        ed_wer = edit_wer_from_list(["".join(decoded)], ["".join(groundtruth)])
+
+
+        acc_cer += ed_cer / characters
+        acc_wer += ed_wer / words
+    
+    cer = 100.*acc_cer / len(X)
+    wer = 100.*acc_wer / len(X)
+    
+    return cer, wer
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Program arguments to work")
@@ -118,7 +150,7 @@ def main():
     XTrain, YTrain, XVal, YVal, XTest, YTest = load_data_text()
 
     #XTrain, XTest, YTrain, YTest = train_test_split(X,Y, test_size=0.1)
-    w2i, i2w = check_and_retrieveVocabulary([YTrain, YVal, YTest], "./vocab", "SPAN")
+    w2i, i2w = check_and_retrieveVocabulary([YTrain, YVal, YTest], "./vocab", "SPANParagraph")
 
     XTrain = np.array(XTrain)
     YTrain = np.array(YTrain)
@@ -151,22 +183,14 @@ def main():
         print(f"Loading weights from pretrained model: {args.pretrain}")
         model_base.load_weights(args.pretrain)
 
-    X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, False)
-
-    print('Training with ' + str(X_train.shape[0]) + ' samples.')
+    print('Training with ' + str(XTrain.shape[0]) + ' samples.')
     
-    inputs = {'the_input': X_train,
-                 'the_labels': Y_train,
-                 'input_length': L_train,
-                 'label_length': T_train,
-                 }
-    
-    outputs = {'ctc': np.zeros([len(X_train)])}
+    batch_generator = ctc_batch_generator(2, XTrain, YTrain, True)
     
     best_ser = 10000
 
     for super_epoch in range(5000):
-       model_train.fit(inputs,outputs, batch_size = 2, epochs = 1, verbose = 2)
+       model_train.fit(batch_generator, steps_per_epoch= len(XTrain)//4, epochs = 1, verbose = 2)
        CER = validateModel(model_pred, XVal, YVal, i2w)
        print(f"EPOCH {super_epoch} | CER {CER}")
        if CER < best_ser:

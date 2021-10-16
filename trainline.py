@@ -1,5 +1,5 @@
 from model import get_line_model
-from utils import levenshtein, check_and_retrieveVocabulary, data_preparation_CTC
+from utils import ctc_batch_generator, check_and_retrieveVocabulary
 
 from sklearn.model_selection import train_test_split
 import cv2
@@ -59,17 +59,6 @@ def nb_words_from_list(list_gt):
         len_ += len(gt)
     return len_
 
-
-def load_data():
-    X = []
-    Y = []
-    for file in os.listdir(CONST_IMG_DIR):
-        X.append(cv2.imread(f"{CONST_IMG_DIR}{file}", 0))
-        with open(f"{CONST_AGNOSTIC_DIR}{file.split('.')[0]}.agnostic") as agnosticfile:
-            line = agnosticfile.readline()
-            Y.append(['<sos>'] + line.split(" ") + ['<eos>'])
-    
-    return X, Y
 
 def createDataArray(dataDict, folder):
     X = []
@@ -138,8 +127,8 @@ def validateModel(model, X, Y, i2w):
         acc_cer += ed_cer / characters
         acc_wer += ed_wer / words
     
-    cer = 100.*acc_cer
-    wer = 100.*acc_wer
+    cer = 100.*acc_cer / len(X)
+    wer = 100.*acc_wer / len(X)
     
     return cer, wer
 
@@ -158,7 +147,7 @@ def main():
     XTrain, YTrain, XVal, YVal, XTest, YTest = load_data_text()
 
     #XTrain, XTest, YTrain, YTest = train_test_split(X,Y, test_size=0.1)
-    w2i, i2w = check_and_retrieveVocabulary([YTrain, YVal, YTest], "./vocab", "SPAN")
+    w2i, i2w = check_and_retrieveVocabulary([YTrain, YVal, YTest], "./vocab", "SPANLines")
 
     XTrain = np.array(XTrain)
     YTrain = np.array(YTrain)
@@ -188,22 +177,14 @@ def main():
         print(f"Loading checkpoint: {args.checkpoint}")
         model_train.load_weights(args.checkpoint)
 
-    X_train, Y_train, L_train, T_train = data_preparation_CTC(XTrain, YTrain, True)
-
-    print('Training with ' + str(X_train.shape[0]) + ' samples.')
-    
-    inputs = {'the_input': X_train,
-                 'the_labels': Y_train,
-                 'input_length': L_train,
-                 'label_length': T_train,
-                 }
-    
-    outputs = {'ctc': np.zeros([len(X_train)])}
+    print('Training with ' + str(XTrain.shape[0]) + ' samples.')
     
     best_ser = 10000
 
+    batch_generator = ctc_batch_generator(16, XTrain, YTrain, True)
+
     for super_epoch in range(5000):
-       model_train.fit(inputs,outputs, batch_size = 4, epochs = 1, verbose = 2)
+       model_train.fit(batch_generator, steps_per_epoch=len(XTrain)//16, epochs = 1, verbose = 1)
        CER, WER = validateModel(model_pred, XVal, YVal, i2w)
        print(f"EPOCH {super_epoch} | CER {CER} | WER {WER}")
        if CER < best_ser:
