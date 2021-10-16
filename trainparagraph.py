@@ -12,7 +12,6 @@ import pickle
 import tensorflow as tf
 import argparse
 import editdistance
-import tqdm
 
 CONST_IMG_DIR = "Data/PAGES/IMG/"
 CONST_AGNOSTIC_DIR = "Data/PAGES/AGNOSTIC/"
