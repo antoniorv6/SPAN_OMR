@@ -17,7 +17,7 @@ CONST_IMG_DIR = "Data/PAGES/IMG/"
 CONST_AGNOSTIC_DIR = "Data/PAGES/AGNOSTIC/"
 PCKL_PATH = "Data/IAM_paragraph/"
 
-BATCH_SIZE = 4
+BATCH_SIZE = 1
 
 config = tf.compat.v1.ConfigProto(gpu_options = 
                          tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8)

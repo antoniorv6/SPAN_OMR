@@ -52,9 +52,9 @@ def data_preparation_CTC(X, Y, lines):
     for i, img in enumerate(X):
         X_train[i, 0:img.shape[0], 0:img.shape[1],0] = img
         if lines:
-            L_train[i] = (max_image_width // 8)
+            L_train[i] = (img.shape[1] // 8)
         else:
-            L_train[i] = (max_image_width // 8) * (max_image_height // 32)
+            L_train[i] = (img.shape[1] // 8) * (img.shape[0] // 32)
             
     # Y_train, T_train
     max_length_seq = max([len(w) for w in Y])
