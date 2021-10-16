@@ -16,6 +16,7 @@ import editdistance
 CONST_IMG_DIR = "Data/PAGES/IMG/"
 CONST_AGNOSTIC_DIR = "Data/PAGES/AGNOSTIC/"
 PCKL_PATH = "Data/IAM_lines/"
+BATCH_SIZE = 16
 
 config = tf.compat.v1.ConfigProto(gpu_options = 
                          tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8)
@@ -181,10 +182,10 @@ def main():
     
     best_ser = 10000
 
-    batch_generator = ctc_batch_generator(16, XTrain, YTrain, True)
+    batch_generator = ctc_batch_generator(BATCH_SIZE, XTrain, YTrain, True)
 
     for super_epoch in range(5000):
-       model_train.fit(batch_generator, steps_per_epoch=len(XTrain)//16, epochs = 1, verbose = 1)
+       model_train.fit(batch_generator, steps_per_epoch=len(XTrain)//BATCH_SIZE, epochs = 1, verbose = 2)
        CER, WER = validateModel(model_pred, XVal, YVal, i2w)
        print(f"EPOCH {super_epoch} | CER {CER} | WER {WER}")
        if CER < best_ser:
