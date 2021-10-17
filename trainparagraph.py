@@ -186,17 +186,18 @@ def main():
 
     print('Training with ' + str(XTrain.shape[0]) + ' samples.')
     
-    batch_generator = ctc_batch_generator(BATCH_SIZE, XTrain, YTrain, True)
+    batch_generator = ctc_batch_generator(BATCH_SIZE, XTrain, YTrain, False)
     
     best_ser = 10000
 
     for super_epoch in range(5000):
-       model_train.fit(batch_generator, steps_per_epoch= len(XTrain)//BATCH_SIZE, epochs = 1, verbose = 2)
-       CER = validateModel(model_pred, XVal, YVal, i2w)
-       print(f"EPOCH {super_epoch} | CER {CER}")
+       model_train.fit(batch_generator, steps_per_epoch=len(XTrain)//BATCH_SIZE, epochs = 1, verbose = 2)
+       CER, WER = validateModel(model_pred, XVal, YVal, i2w)
+       print(f"EPOCH {super_epoch} | CER {CER} | WER {WER}")
        if CER < best_ser:
            print("CER improved - Saving epoch")
            model_train.save_weights(args.save_path)
+           model_base.save_weights("models/SPAN_LINES_PRET.h5")
            best_ser = CER
 
 if __name__ == "__main__":
