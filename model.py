@@ -111,7 +111,6 @@ def get_paragraph_model(input_shape, out_tokens):
 
     x = Conv2D(out_tokens+1, kernel_size=(5,5), padding="same", activation="softmax")(out_base)
 
-    x = Permute((2, 1, 3))(x)
     y_pred = Reshape(target_shape=(-1, out_tokens+1), name='reshape')(x)
 
     model_base = Model(inputs=input, outputs=out_base)
