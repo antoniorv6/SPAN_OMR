@@ -1,4 +1,4 @@
-from model import get_line_model
+from model import get_paragraph_model
 from utils import ctc_batch_generator, check_and_retrieveVocabulary, levenshtein
 
 from sklearn.model_selection import train_test_split
@@ -12,8 +12,10 @@ import tqdm
 import tensorflow as tf
 import argparse
 
-CONST_DIR = "Data/PRIMUS/package_aa/"
-BATCH_SIZE = 16
+CONST_DIR_IMG = "Data/PAGES/PNG/CROPPED/"
+CONST_DIR_AGNOSTIC = "Data/PAGES/AGNOSTIC/"
+
+BATCH_SIZE = 1
 
 config = tf.compat.v1.ConfigProto(gpu_options = 
                          tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.8)
@@ -22,16 +24,23 @@ config.gpu_options.allow_growth = True
 session = tf.compat.v1.Session(config=config)
 tf.compat.v1.keras.backend.set_session(session)
 
-def load_data():
+def load_data(images_path, agnostic_path):
     X = []
     Y = []
-    for folder in tqdm.tqdm(os.listdir(CONST_DIR)):
-        with open(f"{CONST_DIR}{folder}/{folder}.agnostic") as agnostic:
-            line = agnostic.readline()
-            Y.append([token for token in line.split("\t")])
-        
-        X.append(cv2.imread(f"{CONST_DIR}{folder}/{folder}.png", 0))
 
+    lost = 0   
+    for file in tqdm.tqdm(os.listdir(agnostic_path)):
+        filename = file.split(".")[0]
+        image = cv2.imread(f"{images_path}/{filename}.png", 0)
+        if image is not None:
+            X.append(image)
+            with open(f"{agnostic_path}/{filename}.txt") as agnostic:
+                line = agnostic.readline()
+                Y.append([token for token in line.split("+")])
+        else:
+            lost +=1
+
+    print(f"Lost items {lost}")
     return X, Y
 
 def validateModel(model, X, Y, i2w):
@@ -67,6 +76,8 @@ def validateModel(model, X, Y, i2w):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Program arguments to work")
+    parser.add_argument('--img_path', type=str, help="Images path")
+    parser.add_argument('--agnostic_path', type=str, help="Agnostic encoding path")
     parser.add_argument('--checkpoint', type=str, default=None, help="Model checkpoint to load")
     parser.add_argument('--save_path', type=str, help="Path to save the checkpoint")
     args = parser.parse_args()
@@ -77,17 +88,24 @@ def main():
     
     args = parse_arguments()
 
-    X, Y= load_data()
+    X, Y= load_data(args.img_path, args.agnostic_path)
 
     #XTrain, XTest, YTrain, YTest = train_test_split(X,Y, test_size=0.1)
-    w2i, i2w = check_and_retrieveVocabulary([Y], "./vocab", "SPANStaves")
+    w2i, i2w = check_and_retrieveVocabulary([Y], "./vocab", "SPANPages2Staves")
 
-    XTrain, XVal, YTrain, YVal = train_test_split(X, Y, test_size=0.25)
+    XTrain, XValTest, YTrain, YValTest = train_test_split(X, Y, test_size = 0.50)
+    XVal, XTest, YVal, YTest = train_test_split(XValTest, YValTest, test_size = 0.25)
 
     XTrain = np.array(XTrain)
     YTrain = np.array(YTrain)
     XVal = np.array(XVal)
     YVal = np.array(YVal)
+    XTest = np.array(XTest)
+    YTest = np.array(YTest)
+
+    print(len(XTrain))
+    print(len(YTrain))
+    print(YTrain[0])
 
     ratio = 150 / 300
 
@@ -105,8 +123,16 @@ def main():
         XVal[i] = cv2.resize(img, (width, height))
         for idx, symbol in enumerate(YVal[i]):
             YVal[i][idx] = w2i[symbol]
+    
+    for i in range(len(XTest)):
+        img = (255. - XTest[i]) / 255.
+        width = int(np.ceil(img.shape[1] * ratio))
+        height = int(np.ceil(img.shape[0] * ratio))
+        XTest[i] = cv2.resize(img, (width, height))
+        for idx, symbol in enumerate(YTest[i]):
+            YTest[i][idx] = w2i[symbol]
 
-    model_train, model_pred, model_base = get_line_model(input_shape=(None, None, 1), out_tokens=len(w2i))
+    model_train, model_pred, _ = get_paragraph_model(input_shape=(None, None, 1), out_tokens=len(w2i))
     
     if args.checkpoint != None:
         print(f"Loading checkpoint: {args.checkpoint}")
@@ -116,17 +142,18 @@ def main():
     
     best_ser = 10000
 
-    batch_generator = ctc_batch_generator(BATCH_SIZE, XTrain, YTrain, True)
+    batch_generator = ctc_batch_generator(BATCH_SIZE, XTrain, YTrain, False)
 
     for super_epoch in range(5000):
        model_train.fit(batch_generator, steps_per_epoch=len(XTrain)//BATCH_SIZE, epochs = 1, verbose = 1)
-       SER = validateModel(model_pred, XVal, YVal, i2w)
-       print(f"EPOCH {super_epoch} | SER {SER}")
-       if SER < best_ser:
+       SERVAL = validateModel(model_pred, XVal, YVal, i2w)
+       SERTEST = validateModel(model_pred, XTest, YTest, i2w)
+       print(f"EPOCH {super_epoch} | SER IN VALIDATION {SERVAL} | SER IN TEST {SERTEST}")
+       if SERVAL < best_ser:
            print("SER improved - Saving epoch")
            model_train.save_weights(args.save_path)
-           model_base.save_weights("models/SPAN_LINES_PRET.h5")
-           best_ser = SER
+           #model_base.save_weights("models/SPANPages2Staves.h5")
+           best_ser = SERVAL
 
 if __name__ == "__main__":
     main()
