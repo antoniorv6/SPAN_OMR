@@ -1,4 +1,4 @@
-from model import get_line_model
+from architectures.SPAN_MODEL import get_line_model
 from utils import ctc_batch_generator, check_and_retrieveVocabulary
 
 from sklearn.model_selection import train_test_split
