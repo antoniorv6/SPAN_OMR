@@ -102,7 +102,8 @@ class DSCBlock(tf.keras.layers.Layer):
 
 class PositionEncoding2D(tf.keras.layers.Layer):
     
-    def positional_encoding(self, d_model, height, width):
+    @staticmethod
+    def positional_encoding(d_model, height, width):
         pe = np.zeros((d_model, height, width))
         d_model = int(d_model / 2)
         div_term = np.exp(np.arange(0., d_model, 2) *
@@ -113,7 +114,7 @@ class PositionEncoding2D(tf.keras.layers.Layer):
         pe[1:d_model:2, :, :] = np.expand_dims(np.cos(pos_w * div_term).transpose(0, 1), 1).repeat(1, axis=0).repeat(height,axis=1).repeat(1,axis=2).reshape(-1, height,width)
         pe[d_model::2, :, :] = np.expand_dims(np.sin(pos_h * div_term).transpose(0, 1), 2).repeat(1, axis=0).repeat(1,axis=1).repeat(width,axis=2).reshape(-1, height,width)
         pe[d_model + 1::2, :, :] = np.expand_dims(np.cos(pos_h * div_term).transpose(0, 1),2).repeat(1, axis=0).repeat(1,axis=1).repeat(width,axis=2).reshape(-1, height,width)
-        return pe.reshape(height, width, -1)
+        return tf.cast(pe.reshape(height, width, -1), dtype=tf.float32)
 
 
     def __init__(self, d_model, max_width, max_height):
@@ -122,11 +123,11 @@ class PositionEncoding2D(tf.keras.layers.Layer):
             raise ValueError("Cannot use sin and cos with an odd d_model value")
         
         self.d_model = d_model
-        self.position_encoding = self.positional_encoding(d_model, max_width, max_height) 
+        self.position_encoding = PositionEncoding2D.positional_encoding(d_model, max_width, max_height) 
         pass
     
     def __call__(self, input):
-        return input + self.position_encoding[:tf.shape(input)[0],:tf.shape(input)[1],:]
+        return input + self.position_encoding[:tf.shape(input)[1],:tf.shape(input)[2],:]
 
 class PositionEncoding1D(tf.keras.layers.Layer):
     
@@ -134,7 +135,8 @@ class PositionEncoding1D(tf.keras.layers.Layer):
     def get_angles(pos, i, model_depth):
         angle_rates = 1 / np.power(10000, (2 * (i // 2)) / np.float32(model_depth))
         return pos * angle_rates
-
+    
+    @staticmethod
     def positional_encoding(position, model_depth):
         angle_rads = PositionEncoding1D.get_angles(np.arange(position)[:, np.newaxis],
                                                    np.arange(model_depth)[np.newaxis, :],
@@ -153,7 +155,7 @@ class PositionEncoding1D(tf.keras.layers.Layer):
             raise ValueError("Cannot use sin and cos with an odd d_model value")
         
         self.d_model = d_model
-        self.position_encoding = self.positional_encoding(max_seq_len, d_model) 
+        self.position_encoding = PositionEncoding1D.positional_encoding(max_seq_len, d_model) 
         pass
     
     def __call__(self, input):
